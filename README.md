@@ -1,8 +1,12 @@
-# 🎨 Paint
+# 🎨 Let's Paint
+
+**→ Juguemos: [guia-ai.github.io/lets-paint](https://guia-ai.github.io/lets-paint/)**
 
 Tres editores de dibujo hechos a mano, en HTML/`<canvas>` puro. **Sin instalar nada, sin dependencias.** Corren en tu navegador — y andan hasta sin internet.
 
-**Creado por [Andu Truel — GUIA](https://guia-ai.com.ar)** · Libre y abierto (MIT), para todos. Si te gustó: 💛 apoyá el proyecto para que siga creciendo, o contale a alguien.
+Un experimento de **Let's See Lab**, el laboratorio de [GUIA](https://guia-ai.com.ar): levantamos cosas open source y las facilitamos.
+
+**Creado por [Andu Truel — GUIA](https://guia-ai.com.ar)** · Libre y abierto (MIT), para todos. Si te gustó: 💛 [apoyá el proyecto](https://cafecito.app/anduguia) para que siga creciendo, o contale a alguien.
 
 > 📐 La **visión del proyecto**, las tres líneas y —sobre todo— la dirección de funcionalidad del Atelier (los **paneles sueltos / escritorio organizable**) están documentadas en **[`VISION.md`](VISION.md)**.
 

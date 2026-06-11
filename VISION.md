@@ -1,4 +1,6 @@
-# 🎨 Paint — Visión, líneas y funcionalidades
+# 🎨 Let's Paint — Visión, líneas y funcionalidades
+
+> **Arquitectura de marca (decisión 11/06/2026):** la plataforma de Andu es **Let's See** → su laboratorio es **Let's See Lab** (el lab de GUIA: *"levantamos cosas open source y las facilitamos"*) → el primer experimento es **Let's Paint** (este proyecto). URL: guia-ai.github.io/lets-paint · repo: guia-ai/lets-paint. Desde acá se crece "creando y compartiendo lo simple". Pendiente: sumar Let's See Lab a la landing de GUIA (Squarespace — lo hace Andu, Claude le prepara el texto/bloque).
 
 Documento vivo del proyecto. Acá queda registrado **el por qué** de cada versión y, sobre todo, **la dirección de funcionalidad** que Andu pidió para el Atelier (la parte de los paneles sueltos / escritorio organizable). Si volvés a esto en seis meses, este archivo te devuelve el contexto.
 
