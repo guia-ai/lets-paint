@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paint — elegí tu versión</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;font-family:"Segoe UI",Tahoma,sans-serif;}
+  body{
+    display:flex;flex-direction:column;min-height:100vh;
+    background:#1f2530;color:#fff;
+  }
+  header{text-align:center;padding:40px 20px 10px;}
+  header h1{font-size:34px;letter-spacing:1px;}
+  header p{color:#aab2c0;margin-top:8px;font-size:15px;}
+  .cards{flex:1;display:flex;gap:22px;padding:24px clamp(18px,4vw,70px) 10px;flex-wrap:wrap;align-items:flex-start;justify-content:center;}
+  .card{
+    flex:1 1 320px;max-width:440px;border-radius:14px;overflow:hidden;cursor:pointer;
+    text-decoration:none;color:inherit;display:flex;flex-direction:column;
+    border:2px solid rgba(255,255,255,.12);transition:transform .15s, box-shadow .15s;
+    box-shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+  .card:hover{transform:translateY(-6px);box-shadow:0 18px 44px rgba(0,0,0,.5);}
+  .preview{height:230px;display:flex;align-items:center;justify-content:center;position:relative;}
+  /* classic preview */
+  .clasico .preview{background:#008080;}
+  .clasico .win{width:78%;height:78%;background:#c0c0c0;border:2px solid #fff;border-right-color:#404040;border-bottom-color:#404040;box-shadow:2px 2px 0 #000;display:flex;flex-direction:column;}
+  .clasico .tb{background:linear-gradient(#0a64ad,#084d85);color:#fff;font-size:11px;font-weight:bold;padding:3px 6px;}
+  .clasico .canvasarea{flex:1;background:#fff;margin:6px;position:relative;}
+  .clasico .stroke{position:absolute;background:#000;}
+  /* modern preview */
+  .moderno .preview{background:linear-gradient(#7ec8ff,#bfe6ff 55%,#7ec85a);}
+  .moderno .grid{display:grid;grid-template-columns:repeat(6,26px);grid-template-rows:repeat(4,26px);gap:2px;}
+  .moderno .b{border:2px solid rgba(0,0,0,.25);box-shadow:inset 2px 2px 0 rgba(255,255,255,.3);image-rendering:pixelated;}
+  /* atelier preview */
+  .atelier .preview{background:linear-gradient(160deg,#cfeaf6,#e7f3ee 50%,#f6ede2);overflow:hidden;}
+  .atelier .wc{position:relative;width:80%;height:80%;}
+  .atelier .wc::before,.atelier .wc::after{content:"";position:absolute;border-radius:50%;filter:blur(6px);}
+  .atelier .wc::before{width:55%;height:55%;left:8%;top:18%;background:radial-gradient(circle,#7fb5d6,transparent 70%);}
+  .atelier .wc::after{width:48%;height:48%;right:6%;top:30%;background:radial-gradient(circle,#e8836b,transparent 70%);}
+  .body{padding:20px 22px 24px;}
+  .clasico .body{background:#ece9d8;color:#222;}
+  .moderno .body{background:#2e2e36;color:#fff;}
+  .atelier .body{background:#fbf7f1;color:#4a4a55;}
+  .atelier h2 .o{background:linear-gradient(90deg,#e8836b,#cbb4e3,#7fb5d6);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .atelier .tag{background:#ece6f0;color:#6a6478;}
+  .atelier .go{color:#c2685a;}
+  .card h2{font-size:22px;margin-bottom:6px;}
+  .moderno h2 .o{color:#ffd45a;}
+  .card .desc{font-size:13.5px;line-height:1.5;opacity:.88;}
+  .tags{margin-top:12px;display:flex;flex-wrap:wrap;gap:6px;}
+  .tag{font-size:11px;padding:3px 9px;border-radius:20px;}
+  .clasico .tag{background:#d6d2bf;color:#444;}
+  .moderno .tag{background:#43434e;color:#cdd3dd;}
+  .go{margin-top:16px;display:inline-block;font-weight:bold;font-size:14px;}
+  .clasico .go{color:#0a5fae;}
+  .moderno .go{color:#5fd35a;}
+  footer{text-align:center;padding:14px;color:#7d8696;font-size:12px;}
+  footer b{color:#aab2c0;}
+  /* pedí tu paint */
+  .askpaint{max-width:920px;margin:6px auto 18px;display:flex;align-items:center;justify-content:space-between;gap:20px;
+    background:linear-gradient(120deg,#2c3444,#343048);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:18px 24px;}
+  .askpaint h2{font-size:19px;margin-bottom:4px;}
+  .askpaint p{color:#aab2c0;font-size:13.5px;}
+  .fbopen{flex:none;border:none;border-radius:11px;padding:12px 22px;font-size:15px;font-weight:bold;cursor:pointer;
+    background:linear-gradient(120deg,#e8836b,#cbb4e3);color:#1f2530;transition:transform .14s;}
+  .fbopen:hover{transform:translateY(-2px) scale(1.03);}
+  /* modal feedback */
+  .fbbg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:90;align-items:center;justify-content:center;}
+  .fbbg.open{display:flex;}
+  .fbmodal{width:min(440px,92vw);background:#2c3444;border:1px solid rgba(255,255,255,.16);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:10px;}
+  .fbmodal h3{font-size:18px;}
+  .fbmodal select,.fbmodal textarea,.fbmodal input{background:#1f2530;border:1px solid rgba(255,255,255,.18);border-radius:8px;color:#fff;padding:9px;font-size:13.5px;font-family:inherit;resize:vertical;}
+  .fbsend{border:none;border-radius:9px;padding:11px;font-weight:bold;font-size:14px;cursor:pointer;background:#7bbf86;color:#15241a;}
+  .fbsend:hover{background:#8fd49a;}
+  .fbx{align-self:flex-end;cursor:pointer;color:#aab2c0;margin-bottom:-26px;z-index:2;}
+  .fbnote{font-size:11px;color:#7d8696;}
+</style>
+</head>
+<body>
+  <header>
+    <h1>🎨 Paint</h1>
+    <p>Tres versiones, hechas a mano. Corren en tu navegador — y andan hasta sin internet. Elegí con cuál jugar.</p>
+  </header>
+
+  <div class="cards">
+    <!-- CLÁSICO -->
+    <a class="card clasico" href="clasico.html">
+      <div class="preview">
+        <div class="win">
+          <div class="tb">▣ Paint — sin título</div>
+          <div class="canvasarea">
+            <div class="stroke" style="left:18%;top:30%;width:40%;height:4px;transform:rotate(-18deg);"></div>
+            <div class="stroke" style="left:55%;top:50%;width:26%;height:26%;border:3px solid #ed1c24;background:transparent;"></div>
+            <div class="stroke" style="left:20%;top:60%;width:20%;height:20%;border-radius:50%;border:3px solid #00a2e8;background:transparent;"></div>
+          </div>
+        </div>
+      </div>
+      <div class="body">
+        <h2>Paint Clásico</h2>
+        <div class="desc">La réplica fiel del Paint de Windows: 16 herramientas, menús completos, selección, texto, capas de imagen y todas las operaciones de Imagen. Idéntico al original.</div>
+        <div class="tags"><span class="tag">Windows XP/7</span><span class="tag">16 herramientas</span><span class="tag">Texto · Selección</span><span class="tag">Insertar imagen</span></div>
+        <span class="go">Abrir Paint Clásico →</span>
+      </div>
+    </a>
+
+    <!-- MODERNO -->
+    <a class="card moderno" href="moderno.html">
+      <div class="preview">
+        <div class="grid" id="mg"></div>
+      </div>
+      <div class="body">
+        <h2>Paint<span class="o">Craft</span></h2>
+        <div class="desc">Homenaje de fans a Minecraft: construí con <b>bloques</b> (TNT, diamante, lava, redstone…). Tamaño de cubo (un 3× = un bloque grande), grilla y fondo manipulables, ¡mechero para volar la TNT! Gratis, de fans para fans.</div>
+        <div class="tags"><span class="tag">Voxel / pixel-art</span><span class="tag">20 materiales</span><span class="tag">Mechero 💥</span><span class="tag">Grilla + fondo</span></div>
+        <span class="go">Abrir PaintCraft →</span>
+      </div>
+    </a>
+
+    <!-- ATELIER -->
+    <a class="card atelier" href="atelier.html">
+      <div class="preview">
+        <div class="wc" id="wc"></div>
+      </div>
+      <div class="body">
+        <h2>Paint <span class="o">Atelier</span></h2>
+        <div class="desc">Acuarela de ensueño: un pincel que se funde y construye color en capas, difuminar, paleta soñada y un cielo suave con nubes. Empieza simple y crece con vos.</div>
+        <div class="tags"><span class="tag">Acuarela</span><span class="tag">Glassmorphism</span><span class="tag">Difuminar</span><span class="tag">Export PNG</span></div>
+        <span class="go">Abrir Paint Atelier →</span>
+      </div>
+    </a>
+  </div>
+
+  <!-- PEDÍ TU PAINT -->
+  <div class="askpaint">
+    <div>
+      <h2>💬 ¿Qué otro Paint te gustaría que exista?</h2>
+      <p>Esto es de fans para fans: pedime un Paint nuevo, una mejora, o contame qué te gustó. Leo todo.</p>
+      <p id="eggHunt" style="margin-top:6px;color:#ffd45a;font-size:13px;"></p>
+    </div>
+    <button class="fbopen" id="fbBtn">Contame →</button>
+  </div>
+
+  <footer>Creado por <b><a href="https://guia-ai.com.ar" target="_blank" style="color:#cbb4e3;text-decoration:none;">Andu — GUIA</a></b> · hecho con <b>&lt;canvas&gt;</b> · libre y abierto, para todos.<br><span style="opacity:.55;font-size:11px;">PaintCraft es un homenaje de fans. No oficial, sin relación ni aprobación de Mojang/Microsoft.</span></footer>
+
+  <!-- modal de feedback -->
+  <div class="fbbg" id="fbBg">
+    <div class="fbmodal">
+      <span class="fbx" id="fbX">✕</span>
+      <h3>💬 Contame</h3>
+      <select id="fbTipo">
+        <option>Quiero otro Paint: …</option>
+        <option>Una mejora</option>
+        <option>Encontré un error</option>
+        <option>Me encantó algo</option>
+      </select>
+      <textarea id="fbMsg" rows="5" placeholder="Contame tu idea con tus palabras…"></textarea>
+      <input id="fbNombre" type="text" placeholder="Tu nombre (opcional)">
+      <button class="fbsend" id="fbSend">Cerrar</button>
+      <p class="fbnote">El registro abre muy pronto — acá vas a poder pedir Paints y registrar tus códigos 🏆.</p>
+    </div>
+  </div>
+
+  <script>
+    // mini block preview
+    const cols=['#6abe30','#7a5a3a','#8a8a8a','#5cdbd3','#f2cb45','#ff7a18','#3a7bd5','#b07a3e','#9e4a3a','#3f8f2f','#e6d59a','#c0392b'];
+    const mg=document.getElementById('mg');
+    // a tiny scene: sky top, ground bottom
+    const layout=[
+      null,null,'#f2cb45',null,null,null,
+      null,null,null,null,'#5cdbd3',null,
+      null,'#8a8a8a',null,'#ff7a18',null,null,
+      '#6abe30','#6abe30','#6abe30','#6abe30','#6abe30','#6abe30'
+    ];
+    layout.forEach(c=>{ const d=document.createElement('div'); d.className='b'; d.style.background=c||'transparent'; d.style.borderColor=c?'rgba(0,0,0,.25)':'transparent'; d.style.boxShadow=c?'inset 2px 2px 0 rgba(255,255,255,.3)':'none'; mg.appendChild(d); });
+
+    // feedback → directo a Notion via formulario (sin mail)
+    const FORM_URL='https://app.notion.com/p/48a16a2b601c43aaaae7a6799228e52f?pvs=106'; // formulario → Notion de Andu
+    const fbBg=document.getElementById('fbBg');
+    document.getElementById('fbBtn').onclick=()=>{ if(FORM_URL){window.open(FORM_URL,'_blank');} else fbBg.classList.add('open'); };
+    document.getElementById('fbX').onclick=()=>fbBg.classList.remove('open');
+    fbBg.onclick=e=>{ if(e.target===fbBg) fbBg.classList.remove('open'); };
+    document.getElementById('fbSend').onclick=()=>fbBg.classList.remove('open');
+
+    // cacería de secretos 🥚 — el que completa, propone y vota el próximo Paint
+    const HALL_URL='https://lizard-repair-64e.notion.site/7e3b7e9d8d8547cbb3d46985aee978a9?v=37be70435312817bb66d000ce87147c3'; // Salón de la Fama público
+    try{
+      const n=Object.keys(JSON.parse(localStorage.getItem('paint-eggs-v1'))||{}).length;
+      document.getElementById('eggHunt').textContent = n>=4
+        ? '🏆 ¡Completaste la cacería! Registrá tus códigos: ganás tu lugar en el Salón de la Fama y voz y voto para el próximo Paint.'
+        : (n>0 ? '🥚 Cacería de secretos: '+n+'/4 encontrados — seguí buscando…' : '🥚 Hay 4 secretos escondidos en los Paints. Quien los encuentre, vota el próximo Paint…');
+    }catch(_){ document.getElementById('eggHunt').textContent='🥚 Hay 4 secretos escondidos en los Paints…'; }
+    if(HALL_URL){ const a=document.createElement('a'); a.href=HALL_URL; a.target='_blank'; a.textContent='🏆 Ver el Salón de la Fama →'; a.style.cssText='color:#ffd45a;font-size:13px;display:inline-block;margin-top:4px;'; document.getElementById('eggHunt').after(a); }
+  </script>
+</body>
+</html>

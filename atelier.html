@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paint Atelier</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  :root{
+    --glass:rgba(255,255,255,.55); --glass-brd:rgba(255,255,255,.7);
+    --ink:#4a4a55; --accent:#e8836b; --accent2:#7fb5d6;
+    --shadow:0 10px 30px rgba(70,80,110,.18);
+  }
+  html,body{height:100%;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);overflow:hidden;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 70% -10%, #fff6e8 0%, transparent 55%),
+      radial-gradient(900px 700px at 10% 110%, #d9f0d2 0%, transparent 55%),
+      linear-gradient(160deg,#cfeaf6 0%, #e7f3ee 45%, #f6ede2 100%);
+    user-select:none;
+  }
+  /* soft drifting clouds + dust motes */
+  .sky{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0;}
+  .cloud2{position:absolute;border-radius:50%;background:radial-gradient(circle, rgba(255,255,255,.85), rgba(255,255,255,0) 70%);filter:blur(2px);animation:float linear infinite;}
+  @keyframes float{from{transform:translateX(-20vw);}to{transform:translateX(120vw);}}
+  .mote{position:absolute;width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.7);box-shadow:0 0 6px rgba(255,255,255,.6);animation:rise linear infinite;}
+  @keyframes rise{from{transform:translateY(0);opacity:0;}10%{opacity:.9;}90%{opacity:.7;}to{transform:translateY(-110vh);opacity:0;}}
+
+  .app{position:relative;z-index:1;height:100vh;display:flex;flex-direction:column;}
+
+  header{display:flex;align-items:center;justify-content:center;gap:12px;padding:18px 0 6px;}
+  header h1{font-weight:600;font-size:24px;letter-spacing:.3px;color:#5a5a66;}
+  header h1 b{font-weight:700;background:linear-gradient(90deg,#e8836b,#cbb4e3,#7fb5d6);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  header .sub{font-size:12.5px;color:#8a8a96;background:rgba(255,255,255,.5);padding:3px 12px;border-radius:30px;backdrop-filter:blur(8px);}
+
+  .work{flex:1;display:flex;align-items:center;justify-content:center;gap:18px;padding:6px 24px 0;min-height:0;}
+  .homebtn{position:fixed;top:14px;left:16px;z-index:30;text-decoration:none;color:#5a5a66;font-weight:600;font-size:13px;padding:8px 14px;border-radius:14px;}
+  .homebtn:hover{background:rgba(255,255,255,.85);}
+  .dock,.panel{max-height:calc(100vh - 90px);overflow-y:auto;}
+
+  .glass{background:var(--glass);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);border:1px solid var(--glass-brd);box-shadow:var(--shadow);border-radius:22px;}
+
+  /* tool dock */
+  .dock{padding:12px 10px;display:flex;flex-direction:column;gap:9px;align-items:center;}
+  /* === teclas: TRANSPARENTES; blanco fuerte solo al apretar / seleccionar === */
+  .tool{
+    width:54px;height:54px;border:none;border-radius:15px;cursor:pointer;font-size:23px;color:#5a5a66;
+    background:transparent;box-shadow:none;
+    display:flex;align-items:center;justify-content:center;
+    transition:transform .08s ease, box-shadow .1s ease, background .12s;
+  }
+  .tool:hover{background:rgba(255,255,255,.22);}
+  /* apretada: se hunde apenas */
+  .tool:active{background:rgba(255,255,255,.5);transform:translateY(2px);}
+  /* seleccionada: blanco apenas insinuado, sutil */
+  .tool.on{
+    background:rgba(255,255,255,.5);color:#3a3a44;
+    box-shadow:0 2px 8px rgba(120,140,180,.16);
+  }
+  .tool.on:active{transform:translateY(2px);}
+
+  /* === barra izquierda: todo junto y transparente === */
+  .leftbar{position:fixed;left:14px;top:88px;bottom:14px;width:162px;z-index:20;display:flex;flex-direction:column;justify-content:center;gap:16px;padding:6px;overflow-y:auto;overflow-x:hidden;transition:left .2s ease;}
+  .keys{display:grid;grid-template-columns:1fr 1fr;gap:10px;justify-items:center;}
+  .details{display:flex;flex-direction:column;gap:6px;min-height:2px;}
+  .details h4{font-size:10px;text-transform:uppercase;letter-spacing:1.4px;color:#9a9aa6;margin:0 0 2px;font-weight:600;}
+  .details .lab{display:flex;justify-content:space-between;font-size:12px;color:#7a7a86;}
+  .details .hint{font-size:12px;color:#8a8a96;line-height:1.45;}
+  .palette-card{display:flex;flex-direction:column;gap:8px;}
+  .acts{display:flex;flex-wrap:wrap;gap:8px;}
+
+  /* canvas */
+  .stage{display:flex;align-items:center;justify-content:center;}
+  .paper-wrap{position:relative;border-radius:18px;overflow:hidden;box-shadow:0 18px 50px rgba(70,80,110,.28), 0 2px 0 rgba(255,255,255,.6);}
+  .paper-wrap::before{ /* paper texture + cream */
+    content:"";position:absolute;inset:0;z-index:0;
+    background:
+      radial-gradient(circle at 30% 20%, rgba(255,255,255,.6), transparent 40%),
+      linear-gradient(135deg,#fffdf8,#fdf6ec);
+  }
+  #paper{position:relative;z-index:1;display:block;cursor:none;}
+  #brushcursor{position:absolute;z-index:3;border:1.5px solid rgba(90,90,110,.5);border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);box-shadow:0 0 0 1px rgba(255,255,255,.6);display:none;}
+
+  /* right panel */
+  .panel{width:210px;padding:16px;display:flex;flex-direction:column;gap:16px;}
+  .panel section h3{font-size:11px;text-transform:uppercase;letter-spacing:1.4px;color:#9a9aa6;margin-bottom:9px;font-weight:600;}
+  .swatches{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;}
+  .sw{aspect-ratio:1;border-radius:50%;cursor:pointer;border:2px solid rgba(255,255,255,.9);box-shadow:0 2px 5px rgba(80,90,120,.18);transition:transform .14s;}
+  .sw:hover{transform:scale(1.18);}
+  .sw.on{outline:2.5px solid var(--ink);outline-offset:2px;}
+  .current{display:flex;align-items:center;gap:10px;margin-top:10px;}
+  .current .big{width:38px;height:38px;border-radius:12px;box-shadow:inset 0 0 0 2px rgba(255,255,255,.85),0 2px 6px rgba(0,0,0,.12);}
+  .current label{font-size:12px;color:#8a8a96;}
+  .slider label{display:flex;justify-content:space-between;font-size:12.5px;color:#7a7a86;margin-bottom:5px;}
+  input[type=range]{width:100%;-webkit-appearance:none;height:6px;border-radius:6px;background:rgba(120,130,150,.25);outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.25);cursor:pointer;border:2px solid var(--accent);}
+  .acts{display:flex;flex-wrap:wrap;gap:8px;}
+  .act{flex:1 1 44%;border:1px solid rgba(255,255,255,.55);border-radius:12px;padding:9px 6px;cursor:pointer;font-size:12.5px;font-weight:600;color:#6a6a76;
+    background:rgba(255,255,255,.28);
+    transition:transform .1s ease, background .15s;}
+  .act:hover{background:rgba(255,255,255,.55);}
+  .act:active{transform:translateY(1px);background:rgba(255,255,255,.7);}
+  .act.full{flex:1 1 100%;}
+  .act.go{color:#5a9e6e;background:rgba(160,215,180,.28);border-color:rgba(120,190,150,.5);}
+  .act.go:hover{background:rgba(160,215,180,.5);}
+  .act.danger{color:#c2685a;background:rgba(225,170,160,.22);border-color:rgba(210,150,140,.5);}
+  .act.danger:hover{background:rgba(225,170,160,.42);}
+  input[type=color]{position:absolute;opacity:0;width:38px;height:38px;cursor:pointer;}
+  .colorpick{position:relative;}
+
+  /* ítems individuales movibles (teclas + deshacer/rehacer) */
+  .moved{position:fixed!important;z-index:30;margin:0!important;}
+  .grabbing{cursor:grabbing!important;opacity:.92;}
+  /* tooltip de ayuda al hover */
+  #tip{position:fixed;z-index:60;max-width:230px;background:rgba(38,38,46,.92);color:#fff;font-size:12px;line-height:1.45;
+    padding:9px 12px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.28);pointer-events:none;opacity:0;transform:translateY(4px);
+    transition:opacity .14s, transform .14s;backdrop-filter:blur(6px);}
+  #tip.show{opacity:1;transform:translateY(0);}
+  #tip b{color:#ffd9a8;}
+  /* reordenar */
+  .reorder{position:fixed;bottom:16px;left:16px;z-index:25;border:1px solid rgba(255,255,255,.6);border-radius:13px;padding:8px 14px;cursor:pointer;font-size:12.5px;font-weight:600;color:#6a6a76;background:rgba(255,255,255,.4);backdrop-filter:blur(8px);transition:.14s;}
+  .reorder:hover{background:rgba(255,255,255,.7);}
+  /* feedback */
+  .fbbtn{position:fixed;right:16px;bottom:16px;z-index:40;width:48px;height:48px;border:none;border-radius:15px;font-size:21px;cursor:pointer;
+    background:rgba(255,255,255,.42);backdrop-filter:blur(10px);box-shadow:0 4px 12px rgba(70,80,110,.2);transition:transform .14s,background .14s;}
+  .fbbtn:hover{transform:translateY(-2px);background:rgba(255,255,255,.75);}
+  .fbbg{display:none;position:fixed;inset:0;background:rgba(60,70,90,.3);backdrop-filter:blur(4px);z-index:95;align-items:center;justify-content:center;}
+  .fbbg.open{display:flex;}
+  .fbmodal{width:min(420px,92vw);padding:20px;border-radius:20px;display:flex;flex-direction:column;gap:10px;
+    background:rgba(255,255,255,.72);backdrop-filter:blur(20px) saturate(150%);box-shadow:0 20px 50px rgba(70,80,110,.3);}
+  .fbmodal h3{font-size:16px;color:#5a5a66;}
+  .fbmodal select,.fbmodal textarea,.fbmodal input{background:rgba(255,255,255,.8);border:1px solid rgba(150,160,180,.35);border-radius:11px;color:#4a4a55;padding:9px;font-size:13.5px;font-family:inherit;resize:vertical;}
+  .fbmodal .fbsend{border:none;border-radius:12px;padding:11px;font-weight:600;font-size:14px;cursor:pointer;background:linear-gradient(160deg,#9ed4b0,#7bbf86);color:#fff;}
+  .fbmodal .fbsend:hover{filter:brightness(1.06);}
+  .fbnote{font-size:11px;color:#8a8a96;}
+
+  /* ===== Paneles sueltos / escritorio organizable ===== */
+  .floaty{
+    position:fixed;z-index:20;border-radius:20px;padding:10px 12px;background:transparent;cursor:grab;
+    transition:background .2s ease, box-shadow .2s ease, transform .18s cubic-bezier(.34,1.56,.64,1), backdrop-filter .2s ease;
+  }
+  /* el recuadro es transparente: solo se insinúa (velo blanco) al pasar el mouse */
+  .floaty:hover{
+    background:rgba(255,255,255,.28);
+    backdrop-filter:blur(13px) saturate(150%);-webkit-backdrop-filter:blur(13px) saturate(150%);
+    box-shadow:0 14px 36px rgba(70,80,110,.22), inset 0 1px 0 rgba(255,255,255,.8);
+    transform:translateY(-3px);
+  }
+  /* al agarrarlo, se siente "levantado" (3D) */
+  .floaty.grabbing{
+    cursor:grabbing;background:rgba(255,255,255,.42);
+    backdrop-filter:blur(16px) saturate(160%);-webkit-backdrop-filter:blur(16px) saturate(160%);
+    box-shadow:0 24px 56px rgba(70,80,110,.34), inset 0 1px 0 rgba(255,255,255,.9);
+    transform:scale(1.04) rotate(-.4deg);
+  }
+  .floaty .grip{font-size:9.5px;letter-spacing:1.6px;text-transform:uppercase;color:#8c8c98;font-weight:600;text-align:center;margin-bottom:7px;opacity:0;transition:opacity .2s;pointer-events:none;}
+  .floaty:hover .grip{opacity:.85;}
+  .floaty-body{display:flex;flex-direction:column;gap:10px;}
+  .floaty-body.cols{align-items:center;gap:9px;}
+  .floaty .div{width:60%;height:1px;background:rgba(120,120,140,.22);margin:2px auto;}
+  #f-pal .floaty-body, #f-brush .floaty-body, #f-acts .floaty-body{width:196px;}
+  /* tools sueltos: sin recuadro, teclas flotando como un teclado */
+  .floaty.bare, .floaty.bare:hover, .floaty.bare.grabbing{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none;transform:none;}
+  .floaty.bare .grip{display:none;}
+  .floaty.bare .floaty-body.cols{gap:11px;}
+  .reset-layout{position:fixed;bottom:16px;left:16px;z-index:25;border:none;border-radius:14px;padding:8px 14px;cursor:pointer;font-size:12.5px;font-weight:600;color:#5a5a66;background:rgba(255,255,255,.55);backdrop-filter:blur(10px);box-shadow:0 2px 8px rgba(80,90,120,.15);transition:.16s;}
+  .reset-layout:hover{background:rgba(255,255,255,.92);transform:translateY(-1px);}
+</style>
+</head>
+<body>
+<div class="sky" id="sky"></div>
+
+<div class="app">
+  <a class="homebtn glass" href="index.html" title="Volver al inicio">⌂ Inicio</a>
+  <header>
+    <h1>Paint <b>Atelier</b></h1>
+    <span class="sub">acuarela de ensueño · dibujá a tu ritmo</span>
+  </header>
+
+  <!-- CANVAS (la hoja, fija y centrada) -->
+  <div class="work">
+    <div class="stage">
+      <div class="paper-wrap" id="wrap" style="border-radius:18px;">
+        <canvas id="paper"></canvas>
+        <div id="brushcursor"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TODO A LA IZQUIERDA · las teclas mandan, los detalles aparecen según la herramienta -->
+  <aside class="leftbar">
+    <div class="keys" id="tools">
+      <button class="tool on" data-tool="watercolor">🖌️</button>
+      <button class="tool" data-tool="ink">✒️</button>
+      <button class="tool" data-tool="smudge">👆</button>
+      <button class="tool" data-tool="eraser">🩹</button>
+      <button class="tool" data-tool="fill">💧</button>
+      <button class="tool" data-tool="picker">🎯</button>
+    </div>
+
+    <!-- detalles contextuales (lógica tipo Paint: cambian según lo seleccionado) -->
+    <div class="details" id="details"></div>
+
+    <!-- paleta de ensueño -->
+    <div class="palette-card" id="paletteCard">
+      <div class="swatches" id="swatches"></div>
+      <div class="current">
+        <div class="colorpick">
+          <div class="big" id="curColor" style="background:#7fb5d6"></div>
+          <input type="color" id="picker" value="#7fb5d6" title="Color a medida">
+        </div>
+        <label id="curName">Mar</label>
+      </div>
+    </div>
+
+    <!-- acciones -->
+    <div class="acts" id="acts">
+      <button class="act" id="undo">↶ Deshacer</button>
+      <button class="act" id="redo">↷ Rehacer</button>
+      <button class="act go full" id="export">Exportar PNG</button>
+      <button class="act danger full" id="clear">Limpiar lienzo</button>
+    </div>
+  </aside>
+
+  <div id="tip"></div>
+  <button class="reorder" id="reorder">↺ Reordenar</button>
+
+  <button class="fbbtn" id="supBtn" title="Apoyá este proyecto — sé parte de que siga creciendo" style="bottom:74px;">💛</button>
+  <button class="fbbtn" id="fbBtn" title="Contame / pedí tu Paint">💬</button>
+  <div class="fbbg" id="fbBg">
+    <div class="fbmodal">
+      <h3>💬 Contame</h3>
+      <select id="fbTipo">
+        <option>Quiero otro Paint: …</option>
+        <option>Una mejora para el Atelier</option>
+        <option>Encontré un error</option>
+        <option>Me encantó algo</option>
+      </select>
+      <textarea id="fbMsg" rows="5" placeholder="Contame tu idea con tus palabras…"></textarea>
+      <input id="fbNombre" type="text" placeholder="Tu nombre (opcional)">
+      <button class="fbsend" id="fbSend">Cerrar</button>
+      <p class="fbnote">El registro abre muy pronto — guardá tu mensaje.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $=s=>document.querySelector(s);
+
+// ---------- ambient sky ----------
+(function(){const sky=$('#sky');
+  for(let i=0;i<6;i++){const c=document.createElement('div');c.className='cloud2';const w=160+((i*70)%260);c.style.width=w+'px';c.style.height=(w*0.5)+'px';c.style.top=(4+((i*15)%55))+'%';c.style.animationDuration=(40+((i*11)%50))+'s';c.style.animationDelay=(-(i*9))+'s';sky.appendChild(c);}
+  for(let i=0;i<22;i++){const m=document.createElement('div');m.className='mote';m.style.left=((i*53)%100)+'%';m.style.bottom='-10px';const s=2+((i*7)%5);m.style.width=m.style.height=s+'px';m.style.animationDuration=(14+((i*7)%18))+'s';m.style.animationDelay=(-(i*3))+'s';sky.appendChild(m);}
+})();
+
+// ---------- canvas (transparent; cream paper is the CSS bg) ----------
+const cv=$('#paper'); const ctx=cv.getContext('2d',{willReadFrequently:true});
+let W,H;
+function fit(){
+  // barra (162) + respiro (26) + lienzo = UN solo grupo centrado en la ventana
+  const LB=162, GAP=26, MARG=28;
+  const availW=Math.max(320,Math.min(window.innerWidth-(LB+GAP+MARG*2),1040)), availH=Math.max(220,window.innerHeight-150);
+  W=Math.round(Math.min(availW, availH*1.5)); H=Math.round(Math.min(availH, availW/1.5));
+  const snap=cv.width?ctx.getImageData(0,0,cv.width,cv.height):null;
+  cv.width=W; cv.height=H;
+  if(snap) ctx.putImageData(snap,0,0);
+  const groupLeft=Math.max(14,Math.round((window.innerWidth-(LB+GAP+W))/2));
+  const lb=document.querySelector('.leftbar'); if(lb) lb.style.left=groupLeft+'px';
+  const wk=document.querySelector('.work'); if(wk){ wk.style.justifyContent='flex-start'; wk.style.paddingLeft=(groupLeft+LB+GAP)+'px'; }
+}
+fit();
+
+const PAPER_BG='#fdf6ec'; // for export compositing
+
+const state={tool:'watercolor', color:'#7fb5d6', size:36, flow:0.45};
+
+// ---------- palette ----------
+const PAL=[
+  ['#a9d6e9','Cielo'],['#7fb5d6','Mar'],['#bfe0a8','Pradera'],['#7bbf86','Bosque'],
+  ['#f6d186','Sol'],['#f4a259','Atardecer'],['#e8836b','Terracota'],['#f6b6b6','Durazno'],
+  ['#cbb4e3','Lavanda'],['#f7e9da','Crema'],['#9b8aa3','Niebla'],['#4a4a55','Tinta']
+];
+const sw=$('#swatches');
+PAL.forEach(([c,n])=>{const d=document.createElement('div');d.className='sw';d.style.background=c;d.dataset.c=c;d.dataset.n=n;d.title=n;d.onclick=()=>setColor(c,n);sw.appendChild(d);});
+// gesto inteligente: elegir un color con una herramienta que no pinta
+// (difuminar, goma, cuentagotas) te devuelve a la última herramienta de color
+const COLOR_TOOLS=['watercolor','ink','fill'];
+let lastColorTool='watercolor';
+function setColor(c,n){
+  state.color=c;$('#curColor').style.background=c;$('#picker').value=toHex(c);$('#curName').textContent=n||'A medida';
+  document.querySelectorAll('.sw').forEach(s=>s.classList.toggle('on',s.dataset.c===c));
+  if(!COLOR_TOOLS.includes(state.tool)){const b=document.querySelector('.tool[data-tool="'+lastColorTool+'"]');if(b)selectToolBtn(b);}
+}
+function toHex(c){if(c[0]==='#')return c;const m=c.match(/\d+/g);return m?'#'+m.slice(0,3).map(x=>(+x).toString(16).padStart(2,'0')).join(''):'#000000';}
+$('#picker').oninput=e=>setColor(e.target.value,'A medida');
+setColor('#7fb5d6','Mar');
+
+// ---------- detalles contextuales (lógica tipo Paint: cambian según la herramienta) ----------
+const TOOL_INFO={
+  watercolor:{label:'Acuarela', size:true, flow:'Carga', color:true},
+  ink:{label:'Tinta', size:true, flow:'Opacidad', color:true},
+  smudge:{label:'Difuminar', size:true, hint:'Arrastrá para correr y mezclar el color ya pintado.'},
+  eraser:{label:'Goma suave', size:true, hint:'Borra suave hacia el papel.'},
+  fill:{label:'Aguada', flow:'Intensidad', color:true, hint:'Clic para inundar un área con el color elegido.'},
+  picker:{label:'Cuentagotas', hint:'Clic en el lienzo para tomar ese color.'}
+};
+function renderDetails(){
+  const d=$('#details'); const info=TOOL_INFO[state.tool]||{}; d.innerHTML='';
+  const h=document.createElement('h4'); h.textContent=info.label||state.tool; d.appendChild(h);
+  if(info.size){
+    const lab=document.createElement('label'); lab.className='lab'; lab.innerHTML='Tamaño <span id="szv">'+state.size+'</span>';
+    const inp=document.createElement('input'); inp.type='range'; inp.min=2; inp.max=120; inp.value=state.size;
+    inp.oninput=e=>{state.size=+e.target.value; $('#szv').textContent=state.size; sizeCursor();};
+    d.appendChild(lab); d.appendChild(inp);
+  }
+  if(info.flow){
+    const lab=document.createElement('label'); lab.className='lab'; lab.style.marginTop='6px'; lab.innerHTML=info.flow+' <span id="flv">'+Math.round(state.flow*100)+'%</span>';
+    const inp=document.createElement('input'); inp.type='range'; inp.min=3; inp.max=100; inp.value=Math.round(state.flow*100);
+    inp.oninput=e=>{state.flow=+e.target.value/100; $('#flv').textContent=e.target.value+'%';};
+    d.appendChild(lab); d.appendChild(inp);
+  }
+  if(info.hint){ const p=document.createElement('div'); p.className='hint'; p.textContent=info.hint; d.appendChild(p); }
+  // la paleta queda siempre visible: tocar un color te devuelve a pintar (gesto inteligente)
+}
+
+// ---------- tools ----------
+function selectToolBtn(b){document.querySelectorAll('.tool').forEach(x=>x.classList.remove('on'));b.classList.add('on');state.tool=b.dataset.tool;if(COLOR_TOOLS.includes(state.tool))lastColorTool=state.tool;renderDetails();}
+renderDetails();
+
+// ---------- soft brush tip cache ----------
+const tipCache={};
+function getTip(color,r,hardness){
+  const key=color+'|'+r+'|'+hardness;
+  if(tipCache[key])return tipCache[key];
+  const d=Math.max(2,Math.ceil(r*2));
+  const c=document.createElement('canvas');c.width=c.height=d;const x=c.getContext('2d');
+  const g=x.createRadialGradient(d/2,d/2,0,d/2,d/2,d/2);
+  g.addColorStop(0,'rgba(255,255,255,1)');
+  g.addColorStop(Math.max(0,Math.min(.95,hardness)),'rgba(255,255,255,.95)');
+  g.addColorStop(1,'rgba(255,255,255,0)');
+  x.fillStyle=g;x.beginPath();x.arc(d/2,d/2,d/2,0,7);x.fill();
+  x.globalCompositeOperation='source-in';x.fillStyle=color;x.fillRect(0,0,d,d);
+  if(Object.keys(tipCache).length>120){ for(const k in tipCache){delete tipCache[k];break;} }
+  tipCache[key]=c;return c;
+}
+
+// ---------- undo ----------
+const undoS=[],redoS=[];
+function pushUndo(){undoS.push(ctx.getImageData(0,0,W,H));if(undoS.length>30)undoS.shift();redoS.length=0;}
+function doUndo(){if(!undoS.length)return;redoS.push(ctx.getImageData(0,0,W,H));ctx.putImageData(undoS.pop(),0,0);}
+function doRedo(){if(!redoS.length)return;undoS.push(ctx.getImageData(0,0,W,H));ctx.putImageData(redoS.pop(),0,0);}
+
+// ---------- painting ----------
+let drawing=false,last=null;
+function pos(e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*(W/r.width),y:(e.clientY-r.top)*(H/r.height)};}
+
+function stamp(x,y,tip,r,alpha){ctx.globalAlpha=Math.max(0,Math.min(1,alpha));ctx.drawImage(tip,x-r,y-r,r*2,r*2);ctx.globalAlpha=1;}
+
+function paintSeg(a,b){
+  const r=state.size/2;
+  if(state.tool==='eraser'){
+    const tip=getTip('#ffffff',r,0.25);
+    ctx.globalCompositeOperation='destination-out';
+    eachStep(a,b,r,0.25,(x,y)=>stamp(x,y,tip,r,Math.min(1,state.flow*1.3)));
+    ctx.globalCompositeOperation='source-over';
+    return;
+  }
+  if(state.tool==='smudge'){ smudgeSeg(a,b,r); return; }
+  if(state.tool==='ink'){
+    const tip=getTip(state.color,r,0.8);
+    eachStep(a,b,r,0.12,(x,y)=>stamp(x,y,tip,r,Math.min(1,0.55+state.flow*0.45)));
+    return;
+  }
+  // watercolor: soft buildup + occasional bleed halo
+  const tip=getTip(state.color,r,0.0);
+  const halo=getTip(state.color,r*1.7,0.0);
+  let k=0;
+  eachStep(a,b,r,0.16,(x,y)=>{
+    const jx=(Math.random()-.5)*r*0.5, jy=(Math.random()-.5)*r*0.5;
+    stamp(x+jx,y+jy,tip,r*(0.9+Math.random()*0.25),state.flow*0.35);
+    if((k++ % 7)===0) stamp(x,y,halo,r*1.7,state.flow*0.10); // wet bleed
+  });
+}
+function eachStep(a,b,r,spacing,fn){
+  const dist=Math.hypot(b.x-a.x,b.y-a.y);
+  const sp=Math.max(0.7,r*spacing);
+  const n=Math.max(1,Math.ceil(dist/sp));
+  for(let i=0;i<=n;i++){const t=i/n;fn(a.x+(b.x-a.x)*t, a.y+(b.y-a.y)*t);}
+}
+
+// difuminar: ARRASTRA el color (muestrea atrás, estampa adelante) y descarta los
+// píxeles casi transparentes — su color se "ennegrece" por la premultiplicación
+// del canvas y, si se amplifican, aparecen manchas oscuras donde no había nada
+let smudgeTmp=document.createElement('canvas');
+function smudgeSeg(a,b,r){
+  const d=Math.ceil(r*2);
+  smudgeTmp.width=smudgeTmp.height=d;
+  const tx=smudgeTmp.getContext('2d',{willReadFrequently:true});
+  const mask=getTip('#000000',r,0.1);
+  let prev=a;
+  eachStep(a,b,r,0.3,(x,y)=>{
+    tx.clearRect(0,0,d,d);
+    tx.drawImage(cv, prev.x-r, prev.y-r, d, d, 0,0, d,d);   // muestrea DETRÁS
+    const id=tx.getImageData(0,0,d,d), dd=id.data;
+    for(let i=3;i<dd.length;i+=4){ if(dd[i]<24) dd[i]=0; }   // basura premultiplicada → fuera
+    tx.putImageData(id,0,0);
+    tx.globalCompositeOperation='destination-in';
+    tx.drawImage(mask,0,0,d,d);
+    tx.globalCompositeOperation='source-over';
+    ctx.globalAlpha=0.45;
+    ctx.drawImage(smudgeTmp, x-r, y-r, d, d);                // estampa ADELANTE
+    ctx.globalAlpha=1;
+    prev={x,y};
+  });
+}
+
+function floodWash(p){
+  // aguada acuarela: compara en premultiplicado (las colas suaves del pincel cuentan
+  // como "vacío") y el color FLUYE POR DEBAJO de los bordes — sin halos blancos
+  const img=ctx.getImageData(0,0,W,H), data=img.data;
+  const sx=Math.round(p.x), sy=Math.round(p.y);
+  if(sx<0||sy<0||sx>=W||sy>=H) return;
+  const idx=(x,y)=>(y*W+x)*4; const t=idx(sx,sy);
+  const taf=data[t+3]/255, tr=data[t]*taf, tg=data[t+1]*taf, tb=data[t+2]*taf;
+  const col=hexToRgb(state.color); const fa=Math.max(0.05,state.flow);
+  const tol=64;
+  const match=i=>{const a=data[i+3]/255;const dr=data[i]*a-tr,dg=data[i+1]*a-tg,db=data[i+2]*a-tb,da=(a-taf)*160;return dr*dr+dg*dg+db*db+da*da<tol*tol;};
+  const st=[[sx,sy]],seen=new Uint8Array(W*H);
+  while(st.length){const [x,y]=st.pop();if(x<0||y<0||x>=W||y>=H)continue;const p1=y*W+x;if(seen[p1])continue;const i=p1*4;if(!match(i))continue;seen[p1]=1;
+    const sa=data[i+3]/255;
+    if(sa<0.6){
+      // píxel vacío o cola suave → lo existente queda ENCIMA del color nuevo
+      const outA=sa+fa*(1-sa);
+      data[i]  =Math.round((data[i]*sa  +col.r*fa*(1-sa))/outA);
+      data[i+1]=Math.round((data[i+1]*sa+col.g*fa*(1-sa))/outA);
+      data[i+2]=Math.round((data[i+2]*sa+col.b*fa*(1-sa))/outA);
+      data[i+3]=Math.round(outA*255);
+    } else {
+      // zona ya pintada y sólida → la aguada lava por encima
+      const outA=fa+sa*(1-fa);
+      data[i]  =Math.round((col.r*fa+data[i]  *sa*(1-fa))/outA);
+      data[i+1]=Math.round((col.g*fa+data[i+1]*sa*(1-fa))/outA);
+      data[i+2]=Math.round((col.b*fa+data[i+2]*sa*(1-fa))/outA);
+      data[i+3]=Math.round(outA*255);
+    }
+    st.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);}
+  ctx.putImageData(img,0,0);
+}
+function hexToRgb(h){h=toHex(h).slice(1);return{r:parseInt(h.slice(0,2),16),g:parseInt(h.slice(2,4),16),b:parseInt(h.slice(4,6),16)};}
+
+cv.addEventListener('pointerdown',e=>{
+  cv.setPointerCapture(e.pointerId);
+  const p=pos(e);
+  if(state.tool==='picker'){pickColor(p);return;}
+  pushUndo();
+  if(state.tool==='fill'){floodWash(p);return;}
+  drawing=true;last=p;
+  paintSeg(p,{x:p.x+0.01,y:p.y+0.01});
+});
+cv.addEventListener('pointermove',e=>{
+  const p=pos(e); moveCursor(e);
+  if(!drawing)return;
+  paintSeg(last,p);last=p;
+});
+function end(){drawing=false;last=null;}
+cv.addEventListener('pointerup',end);
+cv.addEventListener('pointercancel',end);
+
+function pickColor(p){const d=ctx.getImageData(Math.round(p.x),Math.round(p.y),1,1).data; if(d[3]<10){setColor(PAPER_BG,'Papel');return;} setColor('#'+[d[0],d[1],d[2]].map(n=>n.toString(16).padStart(2,'0')).join(''),'Tomado');}
+
+// ---------- brush cursor ----------
+const bc=$('#brushcursor');
+function sizeCursor(){const r=cv.getBoundingClientRect();const scale=r.width/W;bc.style.width=bc.style.height=(state.size*scale)+'px';}
+function moveCursor(e){const r=cv.getBoundingClientRect();bc.style.display='block';bc.style.left=(e.clientX-r.left)+'px';bc.style.top=(e.clientY-r.top)+'px';sizeCursor();}
+cv.addEventListener('pointerenter',()=>{bc.style.display='block';sizeCursor();});
+cv.addEventListener('pointerleave',()=>{bc.style.display='none';});
+
+// ---------- actions ----------
+$('#clear').onclick=()=>{pushUndo();ctx.clearRect(0,0,W,H);};
+$('#export').onclick=()=>{
+  const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
+  // composite the cream paper under the artwork
+  const g=x.createLinearGradient(0,0,W,H);g.addColorStop(0,'#fffdf8');g.addColorStop(1,'#fdf6ec');x.fillStyle=g;x.fillRect(0,0,W,H);
+  x.drawImage(cv,0,0);
+  const a=document.createElement('a');a.download='acuarela.png';a.href=c.toDataURL('image/png');a.click();
+};
+
+// ---------- keyboard ----------
+window.addEventListener('keydown',e=>{
+  if(e.ctrlKey||e.metaKey){const k=e.key.toLowerCase();if(k==='z'){e.preventDefault();doUndo();}else if(k==='y'){e.preventDefault();doRedo();}else if(k==='s'){e.preventDefault();$('#export').click();}}
+  else{
+    const map={b:'watercolor',i:'ink',s:'smudge',e:'eraser',f:'fill',p:'picker'};const k=map[e.key.toLowerCase()];
+    if(k){const el=document.querySelector('.tool[data-tool="'+k+'"]');if(el)selectToolBtn(el);}
+    else if(e.key>='1'&&e.key<='9'){const sw=document.querySelectorAll('.sw')[+e.key-1];if(sw)sw.click();}  // 1-9 = paleta
+    else if(e.key==='['||e.key===']'){state.size=Math.max(2,Math.min(120,state.size+(e.key===']'?6:-6)));renderDetails();sizeCursor();} // [ ] = tamaño
+  }
+});
+
+// ===== ítems individuales: mover, recordar, reordenar (con deshacer) + ayuda al hover =====
+const LSK='atelier-pos-v2';
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const HELP={
+  watercolor:['Acuarela','Pincel suave que se funde y construye color en capas. Bajá la carga para veladuras transparentes.'],
+  ink:['Tinta','Línea limpia y pareja, para contornos y detalle fino.'],
+  smudge:['Difuminar','Arrastrá sobre lo pintado para correr y mezclar el color, como con el dedo.'],
+  eraser:['Goma','Borra con bordes suaves, hacia el papel.'],
+  fill:['Aguada','Clic para inundar un área con el color elegido (la intensidad regula la transparencia).'],
+  picker:['Cuentagotas','Clic en el lienzo para tomar ese color y seguir pintando con él.'],
+  undo:['Deshacer','Volvé un paso atrás (Ctrl+Z).'],
+  redo:['Rehacer','Repetí lo deshecho (Ctrl+Y).']
+};
+const movable=[...document.querySelectorAll('.tool'), $('#undo'), $('#redo')];
+const idOf=el=>el.dataset.tool||el.id;
+function loadPos(){try{return JSON.parse(localStorage.getItem(LSK))||{};}catch(_){return{};}}
+function savePos(){const o={};movable.forEach(el=>{if(el.classList.contains('moved'))o[idOf(el)]={x:el.offsetLeft,y:el.offsetTop};});try{localStorage.setItem(LSK,JSON.stringify(o));}catch(_){}}
+function applyPos(map){movable.forEach(el=>{const p=map[idOf(el)];if(p){el.classList.add('moved');el.style.left=clamp(p.x,0,innerWidth-el.offsetWidth)+'px';el.style.top=clamp(p.y,0,innerHeight-el.offsetHeight)+'px';}else{el.classList.remove('moved');el.style.left='';el.style.top='';}});}
+
+const tip=$('#tip');
+function showTip(el){const info=HELP[idOf(el)];if(!info)return;tip.innerHTML='<b>'+info[0]+'</b><br>'+info[1];const r=el.getBoundingClientRect();tip.style.left=Math.min(r.right+10,innerWidth-242)+'px';tip.style.top=clamp(r.top,8,innerHeight-90)+'px';tip.classList.add('show');}
+function hideTip(){tip.classList.remove('show');}
+
+function makeDraggable(el,onClick){
+  el.addEventListener('mouseenter',()=>showTip(el));
+  el.addEventListener('mouseleave',hideTip);
+  el.addEventListener('pointerdown',e=>{
+    const sx=e.clientX,sy=e.clientY;let moved=false;const r=el.getBoundingClientRect();const ox=e.clientX-r.left,oy=e.clientY-r.top;
+    try{el.setPointerCapture(e.pointerId);}catch(_){}
+    const mv=ev=>{
+      if(!moved&&Math.hypot(ev.clientX-sx,ev.clientY-sy)>5){moved=true;el.classList.add('moved','grabbing');hideTip();}
+      if(moved){el.style.left=clamp(ev.clientX-ox,0,innerWidth-el.offsetWidth)+'px';el.style.top=clamp(ev.clientY-oy,0,innerHeight-el.offsetHeight)+'px';}
+    };
+    const up=()=>{el.removeEventListener('pointermove',mv);el.removeEventListener('pointerup',up);el.classList.remove('grabbing');
+      if(moved){
+        // soltado de vuelta sobre la columna → se re-acopla a su lugar
+        const lb=document.querySelector('.leftbar').getBoundingClientRect();
+        const cx=el.offsetLeft + el.offsetWidth/2;
+        if(cx > lb.left-30 && cx < lb.right+30){ el.classList.remove('moved'); el.style.left=''; el.style.top=''; }
+        savePos();
+      } else if(onClick) onClick();
+    };
+    el.addEventListener('pointermove',mv);el.addEventListener('pointerup',up);
+  });
+}
+document.querySelectorAll('.tool').forEach(b=>makeDraggable(b,()=>selectToolBtn(b)));
+makeDraggable($('#undo'),doUndo);
+makeDraggable($('#redo'),doRedo);
+applyPos(loadPos());
+
+// reordenar: volver al inicial, con deshacer
+const reBtn=$('#reorder'); let prevPos=null;
+reBtn.onclick=()=>{
+  if(reBtn.dataset.s==='u'){ applyPos(prevPos||{}); savePos(); reBtn.textContent='↺ Reordenar'; reBtn.dataset.s=''; }
+  else{ prevPos=loadPos(); applyPos({}); try{localStorage.removeItem(LSK);}catch(_){}
+    if(Object.keys(prevPos).length){ reBtn.textContent='↩ Deshacer'; reBtn.dataset.s='u'; } }
+};
+
+// ===== apoyo (Cafecito / Ko-fi) =====
+const SUPPORT_URL='https://cafecito.app/anduguia'; // apoyá este proyecto 💛
+$('#supBtn').onclick=()=>{ if(SUPPORT_URL){window.open(SUPPORT_URL,'_blank');} };
+if(!SUPPORT_URL) $('#supBtn').style.display='none'; // oculto hasta tener el link
+
+// ===== feedback (directo a Notion via formulario; sin mail) =====
+const FORM_URL='https://app.notion.com/p/48a16a2b601c43aaaae7a6799228e52f?pvs=106'; // formulario → Notion de Andu
+const fbBg=$('#fbBg');
+$('#fbBtn').onclick=()=>{ if(FORM_URL){window.open(FORM_URL,'_blank');} else fbBg.classList.add('open'); };
+fbBg.onclick=e=>{ if(e.target===fbBg) fbBg.classList.remove('open'); };
+$('#fbSend').onclick=()=>{ fbBg.classList.remove('open'); };
+
+window.addEventListener('resize',()=>{fit();sizeCursor();applyPos(loadPos());});
+})();
+</script>
+</body>
+</html>
