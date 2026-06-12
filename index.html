@@ -140,10 +140,27 @@
       <p>Esto es de fans para fans: pedime un Paint nuevo, una mejora, o contame qué te gustó. Leo todo.</p>
       <p id="eggHunt" style="margin-top:6px;color:#ffd45a;font-size:13px;"></p>
     </div>
-    <button class="fbopen" id="fbBtn">Contame →</button>
+    <div style="display:flex;flex-direction:column;gap:10px;flex:none;">
+      <button class="fbopen" id="fbBtn">💬 Contame →</button>
+      <a href="https://cafecito.app/anduguia" target="_blank" class="fbopen" style="text-decoration:none;text-align:center;background:linear-gradient(120deg,#ffd45a,#e8a26b);">💛 Apoyá esto</a>
+    </div>
   </div>
 
-  <footer><b>Let's Paint</b> · creado por <b><a href="https://guia-ai.com.ar" target="_blank" style="color:#cbb4e3;text-decoration:none;">Andu — GUIA</a></b> en Let's See Lab · libre y abierto, para todos.<br><span style="opacity:.55;font-size:11px;">PaintCraft es un homenaje de fans. No oficial, sin relación ni aprobación de Mojang/Microsoft.</span></footer>
+  <!-- LET'S SEE LAB · proyectos para comunidades -->
+  <div class="askpaint" style="background:linear-gradient(120deg,#26303c,#2c3a34);">
+    <div>
+      <h2>🧪 Let's See Lab — herramientas para comunidades</h2>
+      <p>Levantamos cosas open source y las facilitamos. Lo próximo que sale del laboratorio:</p>
+      <p style="margin-top:8px;font-size:13.5px;color:#aab2c0;">
+        🍲 <b style="color:#d8e0d0;">Sistema para peñas</b> — pedidos y entregas para eventos comunitarios, desde una planilla <span style="opacity:.7;">(demo con datos de ejemplo · en el horno)</span><br>
+        📖 <b style="color:#d8e0d0;">Collagia</b> — la app del libro <span style="opacity:.7;">(en el horno)</span>
+      </p>
+    </div>
+  </div>
+
+  <footer><b>Let's Paint</b> · hecho a mano y con cariño por <b><a href="https://guia-ai.com.ar" target="_blank" style="color:#cbb4e3;text-decoration:none;">Andu — GUIA</a></b> en Let's See Lab · libre y abierto, para todos.<br>
+  <a href="https://cafecito.app/anduguia" target="_blank" style="color:#ffd45a;text-decoration:none;font-weight:bold;">💛 Apoyá este proyecto</a> — sé parte de que siga creciendo.<br>
+  <span style="opacity:.55;font-size:11px;">PaintCraft es un homenaje de fans. No oficial, sin relación ni aprobación de Mojang/Microsoft.</span></footer>
 
   <!-- modal de feedback -->
   <div class="fbbg" id="fbBg">
@@ -185,13 +202,13 @@
     document.getElementById('fbSend').onclick=()=>fbBg.classList.remove('open');
 
     // cacería de secretos 🥚 — el que completa, propone y vota el próximo Paint
-    const HALL_URL='https://lizard-repair-64e.notion.site/7e3b7e9d8d8547cbb3d46985aee978a9?v=37be70435312817bb66d000ce87147c3'; // Salón de la Fama público
+    const HALL_URL='https://lizard-repair-64e.notion.site/37de7043531281189485d830ddbd8d7f'; // Salón de la Fama (página limpia, solo cazadores)
     try{
       const n=Object.keys(JSON.parse(localStorage.getItem('paint-eggs-v1'))||{}).length;
       document.getElementById('eggHunt').textContent = n>=4
-        ? '🏆 ¡Completaste la cacería! Registrá tus códigos: ganás tu lugar en el Salón de la Fama y voz y voto para el próximo Paint.'
-        : (n>0 ? '🥚 Cacería de secretos: '+n+'/4 encontrados — seguí buscando…' : '🥚 Hay 4 secretos escondidos en los Paints. Quien los encuentre, vota el próximo Paint…');
-    }catch(_){ document.getElementById('eggHunt').textContent='🥚 Hay 4 secretos escondidos en los Paints…'; }
+        ? '🏆 ¡Completaste la cacería! Registrá tus códigos con el botón 💬 y entrás al Salón de la Fama.'
+        : (n>0 ? '🥚 Cacería: encontraste '+n+' de los 4 secretos. Seguí explorando…' : '🥚 Hay 4 secretos escondidos en los tres Paints. Si descubrís uno, vas a darte cuenta.');
+    }catch(_){ document.getElementById('eggHunt').textContent='🥚 Hay 4 secretos escondidos en los tres Paints. Si descubrís uno, vas a darte cuenta.'; }
     if(HALL_URL){ const a=document.createElement('a'); a.href=HALL_URL; a.target='_blank'; a.textContent='🏆 Ver el Salón de la Fama →'; a.style.cssText='color:#ffd45a;font-size:13px;display:inline-block;margin-top:4px;'; document.getElementById('eggHunt').after(a); }
   </script>
 </body>

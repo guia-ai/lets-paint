@@ -504,7 +504,9 @@ $('#invClose').onclick=()=>$('#invModal').classList.remove('open');
 $('#invModal').onclick=e=>{if(e.target===$('#invModal'))$('#invModal').classList.remove('open');};
 
 // ---------- tools + cube sizes ----------
-document.querySelectorAll('.tbtn').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tbtn').forEach(x=>x.classList.remove('on'));b.classList.add('on');state.tool=b.dataset.tool;if(MAT_TOOLS.includes(state.tool))lastMatTool=state.tool;});
+document.querySelectorAll('.tbtn').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tbtn').forEach(x=>x.classList.remove('on'));b.classList.add('on');state.tool=b.dataset.tool;if(MAT_TOOLS.includes(state.tool))lastMatTool=state.tool;
+  if(state.tool==='lighter'){let v=false;try{v=!!localStorage.getItem('pc-lighter-hint');localStorage.setItem('pc-lighter-hint','1');}catch(_){}if(!v)toast('🔥 Mechero: quema bloques al arrastrar');}
+});
 function buildCubes(){const w=$('#cubes');w.innerHTML='';[1,2,3,4].forEach(n=>{const b=document.createElement('div');b.className='cube'+(state.size===n?' on':'');const px=8+n*4;b.innerHTML='<span class="sq" style="width:'+px+'px;height:'+px+'px"></span><span class="n">'+n+'×</span>';b.onclick=()=>{state.size=n;buildCubes();};w.appendChild(b);});}
 function buildGridSeg(){const w=$('#gridseg');w.innerHTML='';[{r:24,t:'XL'},{r:32,t:'L'},{r:40,t:'M'},{r:56,t:'S'},{r:80,t:'XS'}].forEach(o=>{const b=document.createElement('button');b.textContent=o.t;b.title=o.r+' bloques de ancho';if(GRIDRES===o.r)b.className='on';b.onclick=()=>setGridRes(o.r);w.appendChild(b);});}
 function buildBgSeg(){const w=$('#bgseg');w.innerHTML='';BG_KEYS.forEach(k=>{
