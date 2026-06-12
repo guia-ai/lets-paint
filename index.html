@@ -180,7 +180,26 @@
     </div>
   </div>
 
+  <button id="langBtn" style="position:fixed;top:14px;right:14px;z-index:60;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#aab2c0;border-radius:20px;padding:6px 14px;cursor:pointer;font-size:13px;font-weight:bold;">🌐 EN</button>
   <script>
+    // ===== idioma (ES por defecto; EN autodetectado o a elección, recordado en todo el sitio) =====
+    const LANG=(()=>{try{const s=localStorage.getItem('lp-lang');if(s)return s;}catch(_){}return (navigator.language||'es').toLowerCase().startsWith('es')?'es':'en';})();
+    document.getElementById('langBtn').textContent = LANG==='es' ? '🌐 EN' : '🌐 ES';
+    document.getElementById('langBtn').onclick=()=>{try{localStorage.setItem('lp-lang',LANG==='es'?'en':'es');}catch(_){}location.reload();};
+    if(LANG==='en'){
+      document.title="Let's Paint — draw, build, play";
+      const set=(sel,txt)=>{const e=document.querySelector(sel);if(e)e.innerHTML=txt;};
+      set('header p',"Three hand-made editors. Free, no sign-up, right in your browser — they even work offline. Pick one and play.");
+      set('header p:nth-of-type(2)','An experiment by <b style="color:#cbb4e3;">Let\'s See Lab</b> — <a href="https://guia-ai.com.ar" target="_blank" style="color:#cbb4e3;">GUIA</a>\'s laboratory: we pick up open source things and make them easy.');
+      const cards=document.querySelectorAll('.card');
+      if(cards[0]){cards[0].querySelector('.desc').textContent="A faithful replica of Windows Paint: 16 tools, full menus, selection, text, image layers and every Image operation. Just like the original.";cards[0].querySelector('.go').textContent="Open Classic Paint →";cards[0].querySelectorAll('.tag').forEach((t,i)=>t.textContent=['Windows XP/7','16 tools','Text · Selection','Insert image'][i]||t.textContent);}
+      if(cards[1]){cards[1].querySelector('.desc').innerHTML="A fan homage to Minecraft: build with <b>blocks</b> (TNT, diamond, lava, redstone…). Cube size (3× = one BIG block), grid & background controls, and a lighter to blow up TNT! Free, by fans for fans.";cards[1].querySelector('.go').textContent="Open PaintCraft →";cards[1].querySelectorAll('.tag').forEach((t,i)=>t.textContent=['Voxel / pixel-art','20 materials','Lighter 💥','Grid + background'][i]||t.textContent);}
+      if(cards[2]){cards[2].querySelector('.desc').textContent="Dreamy watercolor: a brush that blends and builds color in layers, smudge, a soft palette and a gentle cloudy sky. Starts simple and grows with you.";cards[2].querySelector('.go').textContent="Open Atelier →";cards[2].querySelectorAll('.tag').forEach((t,i)=>t.textContent=['Watercolor','Glassmorphism','Smudge','PNG export'][i]||t.textContent);}
+      const ap=document.querySelectorAll('.askpaint');
+      if(ap[0]){ap[0].querySelector('h2').textContent="💬 What other Paint would you love to exist?";ap[0].querySelector('p').textContent="This is by fans, for fans: ask for a new Paint, suggest an improvement, or tell me what you loved. I read everything.";const b=document.getElementById('fbBtn');if(b)b.textContent='💬 Tell me →';const a=ap[0].querySelector('a.fbopen');if(a)a.textContent='💛 Support this';}
+      if(ap[1]){ap[1].querySelector('h2').textContent="🧪 Let's See Lab — tools for communities";ap[1].querySelector('p').textContent="We pick up open source things and make them easy. Next out of the lab:";const ps=ap[1].querySelectorAll('p');if(ps[1])ps[1].innerHTML='🍲 <b style="color:#d8e0d0;">Community events system</b> — orders & deliveries for community fundraisers, from a spreadsheet <span style="opacity:.7;">(demo with sample data · baking)</span><br>📖 <b style="color:#d8e0d0;">Collagia</b> — the book\'s app <span style="opacity:.7;">(baking)</span>';}
+      set('footer','<b>Let\'s Paint</b> · hand-made with love by <b><a href="https://guia-ai.com.ar" target="_blank" style="color:#cbb4e3;text-decoration:none;">Andu — GUIA</a></b> at Let\'s See Lab · free and open, for everyone.<br><a href="https://cafecito.app/anduguia" target="_blank" style="color:#ffd45a;text-decoration:none;font-weight:bold;">💛 Support this project</a> — be part of keeping it alive.<br><span style="opacity:.55;font-size:11px;">PaintCraft is a fan homage. Unofficial; not approved by or associated with Mojang/Microsoft.</span>');
+    }
     // mini block preview
     const cols=['#6abe30','#7a5a3a','#8a8a8a','#5cdbd3','#f2cb45','#ff7a18','#3a7bd5','#b07a3e','#9e4a3a','#3f8f2f','#e6d59a','#c0392b'];
     const mg=document.getElementById('mg');
@@ -203,13 +222,23 @@
 
     // cacería de secretos 🥚 — el que completa, propone y vota el próximo Paint
     const HALL_URL='https://lizard-repair-64e.notion.site/37de7043531281189485d830ddbd8d7f'; // Salón de la Fama (página limpia, solo cazadores)
+    const HUNT_TXT = LANG==='en'
+      ? {done:'🏆 Hunt complete! Register your codes with the 💬 button and join the Hall of Fame.', some:n=>'🥚 Hunt: you found '+n+' of the 4 secrets. Keep exploring…', none:'🥚 There are 4 secrets hidden across the three Paints. If you find one, you\'ll know.'}
+      : {done:'🏆 ¡Completaste la cacería! Registrá tus códigos con el botón 💬 y entrás al Salón de la Fama.', some:n=>'🥚 Cacería: encontraste '+n+' de los 4 secretos. Seguí explorando…', none:'🥚 Hay 4 secretos escondidos en los tres Paints. Si descubrís uno, vas a darte cuenta.'};
     try{
       const n=Object.keys(JSON.parse(localStorage.getItem('paint-eggs-v1'))||{}).length;
-      document.getElementById('eggHunt').textContent = n>=4
-        ? '🏆 ¡Completaste la cacería! Registrá tus códigos con el botón 💬 y entrás al Salón de la Fama.'
-        : (n>0 ? '🥚 Cacería: encontraste '+n+' de los 4 secretos. Seguí explorando…' : '🥚 Hay 4 secretos escondidos en los tres Paints. Si descubrís uno, vas a darte cuenta.');
-    }catch(_){ document.getElementById('eggHunt').textContent='🥚 Hay 4 secretos escondidos en los tres Paints. Si descubrís uno, vas a darte cuenta.'; }
-    if(HALL_URL){ const a=document.createElement('a'); a.href=HALL_URL; a.target='_blank'; a.textContent='🏆 Ver el Salón de la Fama →'; a.style.cssText='color:#ffd45a;font-size:13px;display:inline-block;margin-top:4px;'; document.getElementById('eggHunt').after(a); }
+      document.getElementById('eggHunt').textContent = n>=4 ? HUNT_TXT.done : (n>0 ? HUNT_TXT.some(n) : HUNT_TXT.none);
+    }catch(_){ document.getElementById('eggHunt').textContent=HUNT_TXT.none; }
+    if(HALL_URL){ const a=document.createElement('a'); a.href=HALL_URL; a.target='_blank'; a.textContent = LANG==='en' ? '🏆 See the Hall of Fame →' : '🏆 Ver el Salón de la Fama →'; a.style.cssText='color:#ffd45a;font-size:13px;display:inline-block;margin-top:4px;'; document.getElementById('eggHunt').after(a); }
+    if(LANG==='en'){
+      const tipoOps=['I want another Paint: …','An improvement','I found a bug','I loved something'];
+      document.querySelectorAll('#fbTipo option').forEach((o,i)=>o.textContent=tipoOps[i]||o.textContent);
+      const m=document.getElementById('fbMsg'); if(m)m.placeholder='Tell me your idea in your own words…';
+      const nm=document.getElementById('fbNombre'); if(nm)nm.placeholder='Your name (optional)';
+      const fh=document.querySelector('.fbmodal h3'); if(fh)fh.textContent='💬 Tell me';
+      const fn=document.querySelector('.fbnote'); if(fn)fn.textContent='Registration opens very soon — here you\'ll request Paints and register your codes 🏆.';
+      const fs=document.getElementById('fbSend'); if(fs)fs.textContent='Close';
+    }
   </script>
 </body>
 </html>

@@ -629,6 +629,34 @@ async function eggFound(id,nombre,secreto){
 $('#eggBg').onclick=e=>{ if(e.target===$('#eggBg')) $('#eggBg').classList.remove('open'); };
 $('#eggOk').onclick=()=>{ $('#eggBg').classList.remove('open'); if(FORM_URL) window.open(FORM_URL,'_blank'); else toast('🛠️ ¡El registro abre pronto!'); };
 
+// ---------- idioma (ES/EN, compartido en todo Let's Paint) ----------
+const LANG=(()=>{try{const s=localStorage.getItem('lp-lang');if(s)return s;}catch(_){}return (navigator.language||'es').toLowerCase().startsWith('es')?'es':'en';})();
+(()=>{const b=document.createElement('button');b.textContent=LANG==='es'?'🌐 EN':'🌐 ES';b.style.cssText='border:2px solid var(--bevel-d);background:#52525d;color:#fff;border-radius:6px;padding:5px 10px;cursor:pointer;font-weight:bold;font-size:12px;margin-left:8px;';b.onclick=()=>{try{localStorage.setItem('lp-lang',LANG==='es'?'en':'es');}catch(_){}location.reload();};document.querySelector('header').appendChild(b);})();
+if(LANG==='en'){
+  document.title='PaintCraft · Let\'s Paint';
+  const EN_M={grass:'Grass Block',dirt:'Dirt',stone:'Stone',cobble:'Cobblestone',planks:'Oak Planks',sand:'Sand',brick:'Bricks',leaves:'Oak Leaves',gem:'Block of Diamond',gold:'Block of Gold',iron:'Block of Iron',ember:'Block of Redstone',lava:'Lava',water:'Water',glass:'Glass',rock:'Obsidian',lamp:'Glowstone',snow:'Snow Block',boom:'TNT',forge:'Block of Netherite',portal:'Nether Portal',trophy:"Hunter's Block"};
+  for(const k in EN_M) if(MATS[k]) MATS[k].name=EN_M[k];
+  BGS.day.name='Day';BGS.sunset.name='Sunset';BGS.night.name='Night';BGS.plain.name='Plain';BGS.none.name='Transp.';BGS.nether.name='🌀 Nether';
+  const lbls=document.querySelectorAll('.lbl');const L=['Tools','Size','Grid (pixel)','Background'];lbls.forEach((e,i)=>{if(L[i])e.textContent=L[i];});
+  const h3s=document.querySelectorAll('.side h3');const H=['Material','Actions'];h3s.forEach((e,i)=>{if(H[i])e.textContent=H[i];});
+  $('#undo').textContent='↶ Undo';$('#redo').textContent='↷ Redo';$('#export').textContent='💾 Export';$('#share').textContent='🔗 Share';$('#clear').textContent='💥 Clear';
+  const tg=document.querySelector('.tag');if(tg)tg.textContent='▣ build with blocks · by fans for fans';
+  const dc=document.querySelector('.disc');if(dc)dc.textContent='Fan project · unofficial · not associated with Mojang/Microsoft';
+  const hm=document.querySelector('.home');if(hm)hm.textContent='⌂ Home';
+  const ih=document.querySelector('.inv h2');if(ih)ih.textContent='📦 Materials inventory';
+  const fh=document.querySelector('#fbBg h3');if(fh)fh.textContent='💬 Tell me';
+  const ops=['I want another Paint: …','An improvement for PaintCraft','I found a bug','I loved something'];document.querySelectorAll('#fbTipo option').forEach((o,i)=>o.textContent=ops[i]||o.textContent);
+  $('#fbMsg').placeholder='Tell me your idea in your own words…';$('#fbNombre').placeholder='Your name (optional)';$('#fbSend').textContent='Send';
+  document.querySelectorAll('.fbnote').forEach(n=>n.textContent='Register it and join the Hall of Fame.');
+  const eh=document.querySelector('#eggBg h3');if(eh)eh.textContent='🏆 You found a secret!';
+  const ec=document.querySelector('#eggBg p:nth-of-type(2)');if(ec)ec.textContent='Your discovery code:';
+  $('#eggOk').textContent='Register find 🏆';
+  const TIT={block:'Place block',eraser:'Break',fill:'Fill',pick:'Pick material',line:'Line',rect:'Rectangle',lighter:'Lighter — drag to burn one block at a time · on TNT… 💥'};
+  document.querySelectorAll('.tbtn').forEach(b2=>{if(TIT[b2.dataset.tool])b2.title=TIT[b2.dataset.tool];});
+  const T_EN={'💥 ¡BOOM!':'💥 BOOM!','💥💥 ¡CADENA!':'💥💥 CHAIN REACTION!','¡Exportado! 💾':'Exported! 💾','💥 ¡Vacío!':'💥 Cleared!','🔗 ¡Link copiado!':'🔗 Link copied!','🧱 ¡Construí algo primero!':'🧱 Build something first!','🧱 ¡Obra cargada!':'🧱 Artwork loaded!','🔥 ¡BIENVENIDO AL NETHER!':'🔥 WELCOME TO THE NETHER!','🌍 ¡DE VUELTA A CASA!':'🌍 BACK HOME!','🌀 ¡PORTAL!':'🌀 PORTAL!','🛠️ ¡El registro abre pronto!':'🛠️ Registration opens soon!','🔥 Mechero: quema bloques al arrastrar':'🔥 Lighter: drag to burn blocks'};
+  const _t=toast; toast=m=>_t(T_EN[m]||m);
+}
+
 // ---------- init ----------
 buildHotbar();buildInventory();buildCubes();buildGridSeg();buildBgSeg();selectMaterial('grass');sizeCanvas();
 loadFromHash();updateEggBadge();
